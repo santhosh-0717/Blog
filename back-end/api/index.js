@@ -8,8 +8,12 @@ try {
   connectDB()
     .then(() => {
       console.log("mongodb initialized")
-      app.listen(port, () => `server running at ${port}`)
+      if (process.env.NODE_ENV !== "production") {
+        app.listen(port, () => console.log(`server running at ${port}`));
+      }
     })
 } catch (error) {
   console.error("cannot connect to db, check app.js trycach block")
 }
+
+export default app;
