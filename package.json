@@ -1,0 +1,7 @@
+{
+    "name": "blog-root",
+    "version": "1.0.0",
+    "scripts": {
+        "build": "cd front-end && npm install && npm run build"
+    }
+}
