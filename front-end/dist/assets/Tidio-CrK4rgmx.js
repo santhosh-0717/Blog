@@ -1,0 +1,1 @@
+import{r as c}from"./index-c-vxCIvZ.js";const o=()=>(c.useEffect(()=>{const t=document.createElement("script");return t.src="//code.tidio.co/z0tdlxr2cy542ub3yqfyhdjqvjzg0ci0.js",t.async=!0,t.id="tidio-script",document.body.appendChild(t),()=>{var i,r;(r=(i=window.tidioChatApi)==null?void 0:i.hide)==null||r.call(i)}},[]),null);export{o as T};
