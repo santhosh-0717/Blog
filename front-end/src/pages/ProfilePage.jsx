@@ -36,14 +36,19 @@ const ProfilePage = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const dispatch = useDispatch();
 
-  const[streak, setStreak] = useState(0);
+  // Article delete state
+  const [articleToDelete, setArticleToDelete] = useState(null);
+  const [showArticleDeleteModal, setShowArticleDeleteModal] = useState(false);
+  const [isDeletingArticle, setIsDeletingArticle] = useState(false);
+
+  const [streak, setStreak] = useState(0);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
 
 
   }, [])
-  
+
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -64,20 +69,20 @@ const ProfilePage = () => {
             console.log(response.data.articleDetails);
             setUserArticles(response.data.articleDetails);
             axios
-            .get(url + '/api/auth/streak', {
-              headers: {
-                Authorization: token,
-              },
-            })
-            .then(response => {
-              // console.log(response.data);
-              setStreak(response.data.streak);
+              .get(url + '/api/auth/streak', {
+                headers: {
+                  Authorization: token,
+                },
+              })
+              .then(response => {
+                // console.log(response.data);
+                setStreak(response.data.streak);
 
-            })
-            .catch(error => {
-              console.error(error);
-            });
-        
+              })
+              .catch(error => {
+                console.error(error);
+              });
+
           });
       })
       .catch(error => {
@@ -86,6 +91,26 @@ const ProfilePage = () => {
   }, []);
 
   const navigate = useNavigate();
+
+  const handleDeleteArticle = async () => {
+    if (!articleToDelete) return;
+    try {
+      setIsDeletingArticle(true);
+      const token = localStorage.getItem('token');
+      await axios.delete(`${url}/api/article/deletearticle`, {
+        headers: { Authorization: token },
+        data: { id: articleToDelete._id }
+      });
+      setUserArticles(prev => prev.filter(a => a._id !== articleToDelete._id));
+      toast.success('Article deleted successfully!');
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Failed to delete article');
+    } finally {
+      setIsDeletingArticle(false);
+      setShowArticleDeleteModal(false);
+      setArticleToDelete(null);
+    }
+  };
 
   const handleDeleteAccount = async () => {
     try {
@@ -143,7 +168,7 @@ const ProfilePage = () => {
               <PencilIcon className="w-5 h-5 group-hover:scale-110 transition-transform" />
               <span className="text-sm font-medium">Edit Profile</span>
             </button>
-            
+
             {/* Delete Account Button */}
             <button
               onClick={() => setShowDeleteModal(true)}
@@ -218,28 +243,28 @@ const ProfilePage = () => {
                 Personal Information
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <DetailItem 
-                  label="Email" 
+                <DetailItem
+                  label="Email"
                   value={user.email}
                   className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg"
                 />
-                <DetailItem 
-                  label="Location" 
+                <DetailItem
+                  label="Location"
                   value={user.location || "Not specified"}
                   className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg"
                 />
-                <DetailItem 
-                  label="Member Since" 
+                <DetailItem
+                  label="Member Since"
                   value={user.accountCreated ? new Date(user.accountCreated).toLocaleDateString('en-GB') : "Not available"}
                   className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg"
                 />
-                <DetailItem 
-                  label="Date of Birth" 
+                <DetailItem
+                  label="Date of Birth"
                   value={user.dob ? new Date(user.dob).toLocaleDateString('en-GB') : "Not specified"}
                   className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg"
                 />
-                <DetailItem 
-                  label="Current Strak" 
+                <DetailItem
+                  label="Current Strak"
                   value={streak ? streak.streak : "Strat Writing Articles..."}
                   className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg"
                 />
@@ -262,7 +287,7 @@ const ProfilePage = () => {
                   </span>
                 </div>
                 <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                  <div 
+                  <div
                     className="h-full bg-gradient-to-r from-indigo-500 to-blue-500 rounded-full transition-all duration-500"
                     style={{ width: `${user.authorLevel?.levelProgress || 0}%` }}
                   />
@@ -272,46 +297,46 @@ const ProfilePage = () => {
           </div>
         </div>
         <div className="bg-white mt-10 dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 p-6">
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
-                <ChartBarIcon className="w-5 h-5 text-indigo-600" />
-                You Following:
-              </h3>
-    <motion.div 
-      className="space-y-4 p-4 bg-white shadow-md rounded-lg"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: "easeOut" }}
-    >
-      <h2 className="text-lg font-semibold text-blue-600">You are following:</h2>
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
+            <ChartBarIcon className="w-5 h-5 text-indigo-600" />
+            You Following:
+          </h3>
+          <motion.div
+            className="space-y-4 p-4 bg-white shadow-md rounded-lg"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+          >
+            <h2 className="text-lg font-semibold text-blue-600">You are following:</h2>
 
-      {user.following && user.following.length > 0 ? (
-        <motion.ul className="space-y-2">
-          {user.following.map((followedUser) => (
-            <motion.li
-              key={followedUser.id}
-              className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-100 transition duration-200"
-              whileHover={{ scale: 1.05 }}
-            >
-              <img src={followedUser.image} alt={followedUser.name} className="w-12 h-12 rounded-full border-2 border-blue-500" />
-              <span className="font-medium text-gray-800">{followedUser.name}</span>
-            </motion.li>
-          ))}
-        </motion.ul>
-      ) : (
-        <motion.ul className="space-y-2 text-gray-500">
-          {dummyFollowing.map((user) => (
-            <motion.li
-              key={user.id}
-              className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-100 transition duration-200"
-              whileHover={{ scale: 1.05 }}
-            >
-              <img src={user.image} alt={user.name} className="w-12 h-12 rounded-full border-2 border-gray-400" />
-              <span className="font-medium text-gray-700">{user.name}</span>
-            </motion.li>
-          ))}
-        </motion.ul>
-      )}
-    </motion.div>
+            {user.following && user.following.length > 0 ? (
+              <motion.ul className="space-y-2">
+                {user.following.map((followedUser) => (
+                  <motion.li
+                    key={followedUser.id}
+                    className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-100 transition duration-200"
+                    whileHover={{ scale: 1.05 }}
+                  >
+                    <img src={followedUser.image} alt={followedUser.name} className="w-12 h-12 rounded-full border-2 border-blue-500" />
+                    <span className="font-medium text-gray-800">{followedUser.name}</span>
+                  </motion.li>
+                ))}
+              </motion.ul>
+            ) : (
+              <motion.ul className="space-y-2 text-gray-500">
+                {dummyFollowing.map((user) => (
+                  <motion.li
+                    key={user.id}
+                    className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-100 transition duration-200"
+                    whileHover={{ scale: 1.05 }}
+                  >
+                    <img src={user.image} alt={user.name} className="w-12 h-12 rounded-full border-2 border-gray-400" />
+                    <span className="font-medium text-gray-700">{user.name}</span>
+                  </motion.li>
+                ))}
+              </motion.ul>
+            )}
+          </motion.div>
 
 
         </div>
@@ -323,9 +348,9 @@ const ProfilePage = () => {
             <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">
               Your Articles
             </h3>
-            
+
             {userArticles.length > 0 ? (
-              <motion.div 
+              <motion.div
                 initial="hidden"
                 animate="visible"
                 variants={{
@@ -342,13 +367,13 @@ const ProfilePage = () => {
                     <motion.div
                       key={article._id}
                       variants={{
-                        hidden: { 
-                          opacity: 0, 
+                        hidden: {
+                          opacity: 0,
                           scale: 0.9,
-                          y: 20 
+                          y: 20
                         },
-                        visible: { 
-                          opacity: 1, 
+                        visible: {
+                          opacity: 1,
                           scale: 1,
                           y: 0,
                           transition: {
@@ -381,10 +406,25 @@ const ProfilePage = () => {
                           <span className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 rounded-full text-xs">
                             {article.tag || 'Uncategorized'}
                           </span>
-                          <LikeButton
-                            articleId={article._id}
-                            initialLikes={article.likes || 0}
-                          />
+                          <div className="flex items-center gap-2">
+                            <LikeButton
+                              articleId={article._id}
+                              initialLikes={article.likes || 0}
+                            />
+                            {/* Delete Article Button */}
+                            <motion.button
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              onClick={() => {
+                                setArticleToDelete(article);
+                                setShowArticleDeleteModal(true);
+                              }}
+                              title="Delete article"
+                              className="p-1.5 rounded-full bg-red-50 dark:bg-red-900/30 text-red-500 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/60 transition-colors"
+                            >
+                              <TrashIcon className="w-4 h-4" />
+                            </motion.button>
+                          </div>
                         </div>
 
                         <h3 className="text-xl font-bold text-indigo-800 dark:text-indigo-200 mb-3">
@@ -392,7 +432,7 @@ const ProfilePage = () => {
                         </h3>
 
                         <Markdown className="text-gray-600 dark:text-gray-300 h-20 mb-8 line-clamp-3">
-                          {article.content 
+                          {article.content
                             ? `${article.content.substring(0, 300)}${article.content.length > 300 ? '...' : ''}`
                             : 'No description available.'}
                         </Markdown>
@@ -433,7 +473,7 @@ const ProfilePage = () => {
               </h3>
               <SaveForLaterArticleList />
             </div>
-            
+
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
               <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-6">
                 Liked Articles
@@ -442,6 +482,66 @@ const ProfilePage = () => {
             </div>
           </div>
         </div>
+
+        {/* Delete Article Confirmation Modal */}
+        {showArticleDeleteModal && articleToDelete && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-full">
+                  <TrashIcon className="w-6 h-6 text-red-600 dark:text-red-400" />
+                </div>
+                <h2 className="text-xl font-bold text-gray-800 dark:text-white">Delete Article</h2>
+              </div>
+              <p className="text-gray-600 dark:text-gray-400 mb-2">
+                Are you sure you want to delete:
+              </p>
+              <p className="font-semibold text-indigo-700 dark:text-indigo-300 mb-6 bg-indigo-50 dark:bg-indigo-900/30 px-4 py-2 rounded-lg">
+                "{articleToDelete.title}"
+              </p>
+              <p className="text-sm text-red-500 dark:text-red-400 mb-6">
+                ⚠️ This action cannot be undone. The article will be permanently deleted.
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => {
+                    setShowArticleDeleteModal(false);
+                    setArticleToDelete(null);
+                  }}
+                  disabled={isDeletingArticle}
+                  className="px-5 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteArticle}
+                  disabled={isDeletingArticle}
+                  className="px-5 py-2.5 rounded-xl bg-red-600 text-white hover:bg-red-700 font-medium transition-colors flex items-center gap-2"
+                >
+                  {isDeletingArticle ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span>Deleting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <TrashIcon className="w-4 h-4" />
+                      <span>Delete Article</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
 
         {/* Delete Account Modal */}
         {showDeleteModal && (
