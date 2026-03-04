@@ -20,10 +20,12 @@ const checkStreak = async (req, res, next) => {
       isEmail ? { email: credential } : { username: credential }
     );
 
-    const u_id = user._id;
-    if (!u_id) {
-      return res.status(400).json({ message: "User ID is required" });
+    // If user not found, skip streak logic and let login controller handle it
+    if (!user) {
+      return next();
     }
+
+    const u_id = user._id;
 
     // Find user's streak record
     let streak = await Streak.findOne({ user: u_id });
@@ -61,7 +63,7 @@ const checkStreak = async (req, res, next) => {
   }
 };
 
-const checkStreakArticle = async (req,res, next) => {
+const checkStreakArticle = async (req, res, next) => {
   try {
     const { credential, password } = req.body;
 

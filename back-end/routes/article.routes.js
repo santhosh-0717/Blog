@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { getarticles, addcomments,addArticle, getAllArticles, editArticle, getarticlebyid, deleteArticle, getarticlesbyuser, likeArticle, getArticleByTag, saveforlater, saveasdraft, getUserDrafts, getsaveforlater, removeSaveforLater, recentComments, addReaction, removeReaction, getReactions } from "../controllers/article.controller.js";
+import { getarticles, addcomments, addArticle, getAllArticles, editArticle, getarticlebyid, deleteArticle, getarticlesbyuser, likeArticle, getArticleByTag, saveforlater, saveasdraft, getUserDrafts, getsaveforlater, removeSaveforLater, recentComments, addReaction, removeReaction, getReactions } from "../controllers/article.controller.js";
 import multer from 'multer'
-import { upload_on_cloudinary } from "../utils/cloudinary.js";
+import { upload_on_cloudinary } from "../Utils/cloudinary.js";
 import { Check_add_achievement, Check_add_achievement_comments, Check_add_achievement_liked } from "../middleware/achievement.middleware.js";
 
 const storage = multer.memoryStorage();
@@ -10,7 +10,7 @@ const upload = multer({ storage: storage });
 const articleRouter = Router()
 
 // add article route
-articleRouter.post('/addarticle', Check_add_achievement, upload.single("thumbnail"), addArticle); 
+articleRouter.post('/addarticle', Check_add_achievement, upload.single("thumbnail"), addArticle);
 
 // get article route
 articleRouter.post('/getarticle', getarticles);
@@ -25,7 +25,7 @@ articleRouter.post("/getarticlesbyuser", getarticlesbyuser)
 articleRouter.post('/addcomment', Check_add_achievement_comments, addcomments);
 
 //edit article
-articleRouter.post('/editarticle', upload.single("thumbnail") ,editArticle)
+articleRouter.post('/editarticle', upload.single("thumbnail"), editArticle)
 
 //get article by id
 articleRouter.post('/getarticlebyid', getarticlebyid)
@@ -36,14 +36,14 @@ articleRouter.delete('/deletearticle', deleteArticle);
 // Like/Unlike article route
 articleRouter.post('/like/:articleId', Check_add_achievement_liked, likeArticle);
 
-articleRouter.post('/getarticlebytag',getArticleByTag);
-    
+articleRouter.post('/getarticlebytag', getArticleByTag);
+
 
 //add to save for later
 articleRouter.post('/saveforlater', saveforlater)
 
 //save as draft
-articleRouter.post('/create-draft', upload.single('thumbnail') ,saveasdraft)
+articleRouter.post('/create-draft', upload.single('thumbnail'), saveasdraft)
 
 //get user drafts
 articleRouter.get('/drafts', getUserDrafts)

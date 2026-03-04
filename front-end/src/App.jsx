@@ -28,6 +28,8 @@ const Error404 = lazy(() => import("./pages/Error404"));
 const PublicProfile = lazy(() => import("./pages/PublicProfile"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const DraftsPage = lazy(() => import("./pages/DraftsPage"));
+const Login = lazy(() => import("./pages/Login"));
+const Register = lazy(() => import("./pages/Register"));
 
 
 function App() {
@@ -45,7 +47,7 @@ function App() {
     const timer = setTimeout(() => {
       setLoading(false);
     }, 2500);
-    
+
     return () => clearTimeout(timer);
   }, []);
 
@@ -75,7 +77,7 @@ function App() {
               element={<Article loggedInUserId={loggedInUserId} />}
             />
             <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/achievements" element={<AchievementPage/>} />
+            <Route path="/achievements" element={<AchievementPage />} />
             <Route path="/edit-profile" element={<EditProfilePage />} />
             <Route
               path="/edit-article/:id"
@@ -87,7 +89,9 @@ function App() {
             <Route path="/addarticle" element={<AddarticlePage />} />
             <Route path="/profile/:userId" element={<PublicProfile />} />
             <Route path="/drafts" element={<DraftsPage />} />
-            <Route path="/savedArticles" element={<SavedArticles/>} />
+            <Route path="/savedArticles" element={<SavedArticles />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
           </Routes>
         </Suspense>
       </div>

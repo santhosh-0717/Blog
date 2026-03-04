@@ -1,4 +1,4 @@
-import{c as o,r as l,j as e,L as x}from"./index-c-vxCIvZ.js";import{T as g}from"./Tidio-CrK4rgmx.js";import{U as u}from"./users-DRvYj-R_.js";import{B as h}from"./book-open-Dy3Z1qMN.js";/**
+import{c as o,r as l,j as e,L as x}from"./index-DjpoV6Lx.js";import{T as g}from"./Tidio-Cu6eEFp3.js";import{U as u}from"./users-CS3yyaGq.js";import{B as h}from"./book-open-Cb-cOpGc.js";/**
  * @license lucide-react v0.475.0 - ISC
  *
  * This source code is licensed under the ISC license.

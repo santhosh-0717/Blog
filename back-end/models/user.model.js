@@ -5,11 +5,15 @@ const userSchema = new Schema(
     {
         username: {
             type: String,
-            required: true
+            required: true,
+            unique: true,
+            trim: true,
         },
         email: {
             type: String,
-            required: true
+            required: true,
+            unique: true,
+            trim: true,
         },
         password: {
             type: String,
@@ -59,15 +63,15 @@ const userSchema = new Schema(
         },
         likedArticles: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Article' }],
         commentedArticles: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Article' }],
-        saveForLater:[{type: mongoose.Schema.Types.ObjectId, ref: 'Article'}],
-        draftArticles:[{type: mongoose.Schema.Types.ObjectId, ref: 'Article'}],
-        authorLevel :{
+        saveForLater: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Article' }],
+        draftArticles: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Article' }],
+        authorLevel: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Level'
         },
-        achievements:[{
-            type:mongoose.Schema.Types.ObjectId,
-            ref:"Achievement"
+        achievements: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Achievement"
         }],
         followers: [{
             type: mongoose.Schema.Types.ObjectId,
@@ -77,7 +81,7 @@ const userSchema = new Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User'
         }]
-    },{timestamps: true}
+    }, { timestamps: true }
 );
 
 const User = mongoose.model("User", userSchema);

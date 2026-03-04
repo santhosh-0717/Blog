@@ -6,7 +6,7 @@ import dotenv from 'dotenv';
 import { Article } from '../models/article.model.js';
 import { Comment } from '../models/article.model.js';
 import { sendMail } from '../Utils/mailsender.js';
-import { upload_on_cloudinary } from '../utils/cloudinary.js';
+import { upload_on_cloudinary } from '../Utils/cloudinary.js';
 
 dotenv.config({ path: './.env' });
 const secretKey = process.env.SECRET_KEY;
@@ -23,9 +23,9 @@ const registerUser = async (req, res) => {
     console.log(req.body);
     console.log(otp);
     // Input validation
-    if (!username || !email || !password || !otp) {
-      console.error("Missing required fields: username, email, password, or otp.");
-      return res.status(400).json({ error: "All fields (username, email, password, otp) are required." });
+    if (!username || !email || !password) {
+      console.error("Missing required fields: username, email, or password.");
+      return res.status(400).json({ error: "Username, email, and password are required." });
     }
 
     // Check for existing user
@@ -35,14 +35,15 @@ const registerUser = async (req, res) => {
       return res.status(409).json({ error: "Email already in use." });
     }
 
-    //* Check OTP
+    // OTP verification disabled — direct registration
     // const latestOTP = await OTP.findOne({ email }).sort({ createdAt: -1 }).limit(1);
     // if (!latestOTP || latestOTP.otp !== otp) {
     //   return res.status(400).json({ error: "Invalid or expired OTP" });
     // }
-
     // await OTP.deleteMany({ email });
-    // Password hashing
+    // Sanitize optional fields — empty strings cause Mongoose CastError on Date/Number types
+    const safeDob = dob && dob.trim() !== "" ? dob : undefined;
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // User creation with additional fields
@@ -50,10 +51,10 @@ const registerUser = async (req, res) => {
       username,
       email,
       password: hashedPassword,
-      name,
-      location,
-      picture,
-      dob,
+      name: name || undefined,
+      location: location || undefined,
+      picture: picture || undefined,
+      dob: safeDob,
       isEmailVerified: true
     });
 
@@ -71,7 +72,7 @@ const registerUser = async (req, res) => {
         email: user.email,
         name: user.name,
         location: user.location,
-        picture: user.picture || "" ,
+        picture: user.picture || "",
         dob: user.dob,
         accountCreated: user.accountCreated,
         articlesPublished: user.articlesPublished
@@ -81,7 +82,21 @@ const registerUser = async (req, res) => {
     console.log(`User ${username} registered successfully.`);
   } catch (error) {
     console.error("Error during user registration:", error);
-    res.status(500).json({ error: "An error occurred while registering the user." });
+    // Handle MongoDB duplicate key error
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern || {})[0];
+      return res.status(409).json({
+        error: field === 'username'
+          ? "Username is already taken. Please choose a different one."
+          : "Email is already in use."
+      });
+    }
+    // Handle Mongoose validation errors
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(e => e.message).join(', ');
+      return res.status(400).json({ error: messages });
+    }
+    res.status(500).json({ error: "An error occurred while registering the user.", detail: error.message });
   }
 };
 
@@ -111,12 +126,12 @@ const loginUser = async (req, res) => {
       });
     }
 
-    // // Password validation
-    // const isValidPassword = await bcrypt.compare(password, user.password);
-    // if (!isValidPassword) {
-    //   console.error(`Login failed for user: ${user.username}. Invalid password.`);
-    //   return res.status(401).json({ error: "Incorrect password" });
-    // }
+    // Password validation
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword) {
+      console.error(`Login failed for user: ${user.username}. Invalid password.`);
+      return res.status(401).json({ error: "Incorrect password" });
+    }
 
     const token = jwt.sign({ userId: user._id }, secretKey, { expiresIn: '1h' });
 
@@ -165,7 +180,7 @@ const getProfile = async (req, res) => {
       return res.status(404).json({ error: "User not found." });
     }
 
-    await user.populate({path:'likedArticles', strictPopulate:false})
+    await user.populate({ path: 'likedArticles', strictPopulate: false })
     // Send back detailed user profile data
     res.json({
       user
@@ -356,11 +371,11 @@ const editProfile = async (req, res) => {
         return res.status(500).json({ error: "Error uploading profile image." });
       }
     }
-    console.log("before",user)
+    console.log("before", user)
     // Save the updated user
     await user.save();
 
-    console.log("after",user)
+    console.log("after", user)
 
     res.json({
       message: "Profile updated successfully.",
@@ -481,7 +496,7 @@ const resetPassword = async (req, res) => {
 const getOtherUser = async (req, res) => {
   try {
     const { userId } = req.params;
-    
+
     const user = await User.findById(userId).select(
       'username name location picture dob age accountCreated articlesPublished followers following'
     );
@@ -497,105 +512,105 @@ const getOtherUser = async (req, res) => {
 };
 
 const followUser = async (req, res) => {
-    try {
-        const { userToFollowId } = req.params;
-        
-        // Get current user from token
-        const authHeader = req.headers.authorization;
-        if (!authHeader) {
-            return res.status(401).json({ error: "No token provided." });
-        }
-        const token = authHeader.split(' ')[1];
-        const decoded = jwt.verify(token, secretKey);
-        const currentUserId = decoded.userId;
+  try {
+    const { userToFollowId } = req.params;
 
-        // Check if trying to follow self
-        if (currentUserId === userToFollowId) {
-            return res.status(400).json({ error: "You cannot follow yourself" });
-        }
-
-        // Find both users
-        const userToFollow = await User.findById(userToFollowId);
-        const currentUser = await User.findById(currentUserId);
-
-        console.log("userToFollow",userToFollow)
-        console.log("currentUser",currentUser)
-
-        if (!userToFollow || !currentUser) {
-            return res.status(404).json({ error: "User not found" });
-        }
-
-        // Check if already following
-        if (currentUser.following.includes(userToFollowId)) {
-            return res.status(400).json({ error: "You are already following this user" });
-        }
-
-        // Add to following and followers lists
-        currentUser.following.push(userToFollowId);
-        userToFollow.followers.push(currentUserId);
-
-        await currentUser.save();
-        await userToFollow.save();
-
-        res.status(200).json({ 
-            message: "Successfully followed user",
-            following: currentUser.following,
-            followers: userToFollow.followers
-        });
-
-    } catch (error) {
-        console.error("Error in followUser:", error);
-        res.status(500).json({ error: "An error occurred while following user" });
+    // Get current user from token
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ error: "No token provided." });
     }
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, secretKey);
+    const currentUserId = decoded.userId;
+
+    // Check if trying to follow self
+    if (currentUserId === userToFollowId) {
+      return res.status(400).json({ error: "You cannot follow yourself" });
+    }
+
+    // Find both users
+    const userToFollow = await User.findById(userToFollowId);
+    const currentUser = await User.findById(currentUserId);
+
+    console.log("userToFollow", userToFollow)
+    console.log("currentUser", currentUser)
+
+    if (!userToFollow || !currentUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Check if already following
+    if (currentUser.following.includes(userToFollowId)) {
+      return res.status(400).json({ error: "You are already following this user" });
+    }
+
+    // Add to following and followers lists
+    currentUser.following.push(userToFollowId);
+    userToFollow.followers.push(currentUserId);
+
+    await currentUser.save();
+    await userToFollow.save();
+
+    res.status(200).json({
+      message: "Successfully followed user",
+      following: currentUser.following,
+      followers: userToFollow.followers
+    });
+
+  } catch (error) {
+    console.error("Error in followUser:", error);
+    res.status(500).json({ error: "An error occurred while following user" });
+  }
 };
 
 const unfollowUser = async (req, res) => {
   try {
-      const { userToUnfollowId } = req.params;
-      
-      // Get current user from token
-      const authHeader = req.headers.authorization;
-      if (!authHeader) {
-          return res.status(401).json({ error: "No token provided." });
-      }
-      const token = authHeader.split(' ')[1];
-      const decoded = jwt.verify(token, secretKey);
-      const currentUserId = decoded.userId;
+    const { userToUnfollowId } = req.params;
 
-      // Check if trying to unfollow self
-      if (currentUserId === userToUnfollowId) {
-          return res.status(400).json({ error: "You cannot unfollow yourself" });
-      }
+    // Get current user from token
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ error: "No token provided." });
+    }
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, secretKey);
+    const currentUserId = decoded.userId;
 
-      // Find both users
-      const userToUnfollow = await User.findById(userToUnfollowId);
-      const currentUser = await User.findById(currentUserId);
+    // Check if trying to unfollow self
+    if (currentUserId === userToUnfollowId) {
+      return res.status(400).json({ error: "You cannot unfollow yourself" });
+    }
 
-      if (!userToUnfollow || !currentUser) {
-          return res.status(404).json({ error: "User not found" });
-      }
+    // Find both users
+    const userToUnfollow = await User.findById(userToUnfollowId);
+    const currentUser = await User.findById(currentUserId);
 
-      // Check if actually following
-      if (!currentUser.following.includes(userToUnfollowId)) {
-          return res.status(400).json({ error: "You are not following this user" });
-      }
+    if (!userToUnfollow || !currentUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
 
-      // Remove from following and followers lists
-      currentUser.following = currentUser.following.filter(id => id.toString() !== userToUnfollowId);
-      userToUnfollow.followers = userToUnfollow.followers.filter(id => id.toString() !== currentUserId);
+    // Check if actually following
+    if (!currentUser.following.includes(userToUnfollowId)) {
+      return res.status(400).json({ error: "You are not following this user" });
+    }
 
-      await currentUser.save();
-      await userToUnfollow.save();
+    // Remove from following and followers lists
+    currentUser.following = currentUser.following.filter(id => id.toString() !== userToUnfollowId);
+    userToUnfollow.followers = userToUnfollow.followers.filter(id => id.toString() !== currentUserId);
 
-      res.status(200).json({ 
-          message: "Successfully unfollowed user",
-          following: currentUser.following,
-          followers: userToUnfollow.followers
-      });
+    await currentUser.save();
+    await userToUnfollow.save();
+
+    res.status(200).json({
+      message: "Successfully unfollowed user",
+      following: currentUser.following,
+      followers: userToUnfollow.followers
+    });
 
   } catch (error) {
-      console.error("Error in unfollowUser:", error);
-      res.status(500).json({ error: "An error occurred while unfollowing user" });
+    console.error("Error in unfollowUser:", error);
+    res.status(500).json({ error: "An error occurred while unfollowing user" });
   }
 };
 
