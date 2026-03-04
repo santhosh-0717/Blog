@@ -30,8 +30,6 @@ const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const DraftsPage = lazy(() => import("./pages/DraftsPage"));
 const Login = lazy(() => import("./pages/Login"));
 const Register = lazy(() => import("./pages/Register"));
-
-
 function App() {
   const [loading, setLoading] = useState(true);
   const theme = useSelector((state) => state.auth.theme);
